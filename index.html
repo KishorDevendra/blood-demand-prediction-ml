@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BloodSaviour — Mumbai Blood Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --crimson: #C8102E; --crimson-deep: #8B0000; --crimson-light: #FF3352;
+  --bg: #0A0A0B; --surface: #111114; --surface2: #18181C; --surface3: #222228;
+  --border: rgba(200,16,46,0.2); --border2: rgba(255,255,255,0.05);
+  --text: #F0EDE8; --text-dim: #7A7570; --text-muted: #3D3A36;
+  --gold: #E8B86D; --green: #2ECC71; --amber: #F39C12; --blue: #4A90D9;
+  --radius: 12px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 800px 600px at 20% 10%,rgba(200,16,46,0.05) 0%,transparent 70%),radial-gradient(ellipse 600px 400px at 80% 80%,rgba(200,16,46,0.03) 0%,transparent 70%);pointer-events:none;z-index:0;}
+body::after{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(200,16,46,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(200,16,46,0.025) 1px,transparent 1px);background-size:60px 60px;pointer-events:none;z-index:0;}
+::-webkit-scrollbar{width:4px;height:4px;}::-webkit-scrollbar-track{background:var(--surface);}::-webkit-scrollbar-thumb{background:var(--crimson-deep);border-radius:2px;}
+
+/* ── SIDEBAR ── */
+.sidebar{position:fixed;left:0;top:0;bottom:0;width:72px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:24px 0;gap:8px;z-index:100;}
+.logo-mark{width:44px;height:44px;background:var(--crimson);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:24px;position:relative;cursor:pointer;}
+.logo-mark::after{content:'';position:absolute;inset:-2px;border-radius:14px;border:1px solid rgba(200,16,46,0.4);animation:pb 2s infinite;}
+@keyframes pb{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.3;transform:scale(1.05);}}
+.nav-btn{width:44px;height:44px;background:transparent;border:none;border-radius:10px;color:var(--text-dim);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;transition:all 0.2s;position:relative;}
+.nav-btn:hover,.nav-btn.active{background:rgba(200,16,46,0.15);color:var(--crimson-light);}
+.nav-btn.active::before{content:'';position:absolute;left:-8px;width:3px;height:20px;background:var(--crimson);border-radius:0 4px 4px 0;}
+.nav-tooltip{position:absolute;left:60px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:11px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity 0.2s;z-index:200;}
+.nav-btn:hover .nav-tooltip{opacity:1;}
+
+/* ── MAIN ── */
+.main{margin-left:72px;min-height:100vh;position:relative;z-index:1;}
+.header{padding:22px 32px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:rgba(10,10,11,0.8);backdrop-filter:blur(20px);position:sticky;top:0;z-index:50;}
+.header-left h1{font-family:'Syne',sans-serif;font-size:21px;font-weight:800;letter-spacing:-0.5px;}
+.header-left h1 span{color:var(--crimson);}
+.header-left p{font-size:11px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-top:2px;}
+.header-right{display:flex;align-items:center;gap:14px;}
+.live-badge{display:flex;align-items:center;gap:6px;background:rgba(46,204,113,0.1);border:1px solid rgba(46,204,113,0.3);border-radius:20px;padding:5px 13px;font-size:11px;color:var(--green);}
+.live-dot{width:6px;height:6px;background:var(--green);border-radius:50%;animation:blink 1.5s infinite;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.2;}}
+.timestamp{font-size:11px;color:var(--text-dim);}
+
+/* ── TABS ── */
+.tabs{display:flex;padding:0 32px;border-bottom:1px solid var(--border);background:var(--surface);overflow-x:auto;}
+.tab{padding:13px 18px;font-size:12px;font-family:'Syne',sans-serif;font-weight:600;letter-spacing:0.5px;color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;text-transform:uppercase;white-space:nowrap;}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--crimson-light);border-bottom-color:var(--crimson);}
+
+/* ── PAGES ── */
+.page{display:none;padding:28px 32px;}
+.page.active{display:block;}
+
+/* ── STAT CARDS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;position:relative;overflow:hidden;transition:transform 0.2s,border-color 0.2s;}
+.stat-card:hover{transform:translateY(-2px);border-color:rgba(200,16,46,0.4);}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--crimson),transparent);}
+.stat-label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;}
+.stat-value{font-family:'Syne',sans-serif;font-size:34px;font-weight:800;color:var(--text);line-height:1;}
+.stat-value.red{color:var(--crimson-light);}.stat-value.green{color:var(--green);}.stat-value.gold{color:var(--gold);}
+.stat-sub{font-size:11px;color:var(--text-dim);margin-top:5px;}
+.stat-icon{position:absolute;top:18px;right:18px;font-size:26px;opacity:0.12;}
+
+/* ── LAYOUTS ── */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:18px;}
+
+/* ── CARD ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px;}
+.card-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;}
+.card-title span{background:rgba(200,16,46,0.1);border:1px solid var(--border);border-radius:6px;padding:2px 8px;font-size:10px;color:var(--crimson-light);}
+
+/* ── BLOOD GROUP TABLE-CARDS (replaces donut) ── */
+.bg-table-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.bg-tcard{background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:14px 10px;text-align:center;position:relative;transition:all 0.2s;}
+.bg-tcard:hover{border-color:rgba(200,16,46,0.4);transform:translateY(-1px);}
+.bg-tcard.bg-ok{border-color:rgba(46,204,113,0.2);background:rgba(46,204,113,0.03);}
+.bg-tcard.bg-short{border-color:rgba(200,16,46,0.4);background:rgba(200,16,46,0.04);}
+.bg-tcard-name{font-family:'Fraunces',serif;font-size:20px;font-weight:600;color:var(--text);line-height:1;margin-bottom:4px;}
+.bg-tcard-units{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;line-height:1;}
+.bg-tcard-units.ok{color:var(--green);}
+.bg-tcard-units.short{color:var(--crimson-light);}
+.bg-tcard-sub{font-size:10px;color:var(--text-dim);margin-top:3px;}
+.bg-tcard-bar{height:3px;background:var(--surface3);border-radius:2px;margin-top:8px;overflow:hidden;}
+.bg-tcard-fill{height:100%;border-radius:2px;transition:width 0.8s ease;}
+.bg-tcard-badge{display:inline-block;margin-top:7px;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:600;letter-spacing:0.5px;}
+.bg-tcard-badge.ok{background:rgba(46,204,113,0.1);color:var(--green);border:1px solid rgba(46,204,113,0.2);}
+.bg-tcard-badge.short{background:rgba(200,16,46,0.1);color:var(--crimson-light);border:1px solid rgba(200,16,46,0.2);}
+.bg-tcard-forecast{font-size:10px;color:var(--text-dim);margin-top:4px;}
+
+/* ── CHART ── */
+.chart-canvas-wrap{position:relative;width:100%;}
+.chart-metric-row{display:flex;justify-content:space-around;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
+.chart-metric{text-align:center;}
+.chart-metric-val{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--text);}
+.chart-metric-lbl{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-top:2px;}
+.chart-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:12px;}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text-dim);}
+.legend-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
+
+/* ── TABLE ── */
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+th{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);background:var(--surface2);white-space:nowrap;}
+td{padding:11px 12px;font-size:12px;border-bottom:1px solid rgba(255,255,255,0.03);vertical-align:middle;}
+tr:hover td{background:rgba(200,16,46,0.025);}
+.badge{display:inline-flex;align-items:center;gap:3px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:500;}
+.badge-green{background:rgba(46,204,113,0.1);color:var(--green);border:1px solid rgba(46,204,113,0.2);}
+.badge-red{background:rgba(200,16,46,0.1);color:var(--crimson-light);border:1px solid var(--border);}
+.badge-gold{background:rgba(232,184,109,0.1);color:var(--gold);border:1px solid rgba(232,184,109,0.2);}
+.badge-dim{background:var(--surface3);color:var(--text-dim);border:1px solid var(--border);}
+.badge-blue{background:rgba(74,144,217,0.1);color:var(--blue);border:1px solid rgba(74,144,217,0.2);}
+.blood-badge{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:7px;font-family:'Fraunces',serif;font-size:13px;font-weight:600;background:rgba(200,16,46,0.12);color:var(--crimson-light);border:1px solid var(--border);}
+.rank-num{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;color:var(--text-muted);min-width:28px;}
+.rank-num.top{color:var(--gold);}
+
+/* ── SCORE BAR ── */
+.score-bar{display:flex;align-items:center;gap:7px;}
+.score-track{flex:1;height:4px;background:var(--surface3);border-radius:2px;overflow:hidden;min-width:50px;}
+.score-fill{height:100%;border-radius:2px;}
+.score-num{font-size:11px;min-width:30px;text-align:right;}
+
+/* ── FORM ── */
+.predict-form{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:28px;max-width:560px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
+.form-group{display:flex;flex-direction:column;gap:7px;}
+.form-group label{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);}
+.form-group select,.form-group input{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:11px 13px;color:var(--text);font-family:'DM Mono',monospace;font-size:13px;outline:none;transition:border-color 0.2s;}
+.form-group select:focus,.form-group input:focus{border-color:rgba(200,16,46,0.5);}
+.form-group select option{background:var(--surface2);}
+.btn-primary{background:var(--crimson);color:white;border:none;border-radius:8px;padding:13px 28px;font-family:'Syne',sans-serif;font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;width:100%;margin-top:6px;}
+.btn-primary:hover{background:var(--crimson-light);transform:translateY(-1px);box-shadow:0 8px 28px rgba(200,16,46,0.3);}
+.btn-sm{background:var(--surface2);color:var(--text-dim);border:1px solid var(--border);border-radius:7px;padding:6px 14px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all 0.2s;}
+.btn-sm:hover{border-color:rgba(200,16,46,0.4);color:var(--crimson-light);}
+.result-box{margin-top:20px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:20px;display:none;}
+.result-box.visible{display:block;}
+.result-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid rgba(255,255,255,0.04);}
+.result-row:last-child{border-bottom:none;}
+.result-row .key{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;}
+.result-row .val{font-family:'Syne',sans-serif;font-size:17px;font-weight:700;}
+.shortage-alert{background:rgba(200,16,46,0.08);border:1px solid rgba(200,16,46,0.3);border-radius:8px;padding:11px 14px;margin-top:14px;font-size:12px;color:var(--crimson-light);display:flex;align-items:center;gap:8px;}
+
+/* ── BLOOD BANKS ── */
+.bank-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+.bank-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;transition:all 0.2s;}
+.bank-card:hover{border-color:rgba(200,16,46,0.4);transform:translateY(-1px);}
+.bank-name{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px;}
+.bank-area{font-size:11px;color:var(--crimson-light);margin-bottom:3px;}
+.bank-meta{display:flex;gap:10px;font-size:10px;color:var(--text-dim);margin-bottom:10px;flex-wrap:wrap;align-items:center;}
+.bank-src{display:inline-flex;align-items:center;gap:3px;font-size:9px;padding:2px 7px;border-radius:4px;}
+.bank-src.live{background:rgba(46,204,113,0.1);color:var(--green);border:1px solid rgba(46,204,113,0.25);}
+.bank-src.sim{background:var(--surface3);color:var(--text-dim);border:1px solid var(--border);}
+.bg-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+.bg-chip{display:inline-flex;flex-direction:column;align-items:center;width:42px;padding:5px 0;border-radius:6px;border:1px solid var(--border2);background:var(--surface3);}
+.bg-chip-name{font-family:'Fraunces',serif;font-size:11px;color:var(--text-dim);line-height:1;}
+.bg-chip-val{font-family:'Syne',sans-serif;font-size:12px;font-weight:700;margin-top:2px;}
+.bg-chip.high{background:rgba(46,204,113,0.07);border-color:rgba(46,204,113,0.2);}.bg-chip.high .bg-chip-val{color:var(--green);}
+.bg-chip.med{background:rgba(232,184,109,0.07);border-color:rgba(232,184,109,0.2);}.bg-chip.med .bg-chip-val{color:var(--gold);}
+.bg-chip.low{background:rgba(200,16,46,0.06);border-color:rgba(200,16,46,0.15);}.bg-chip.low .bg-chip-val{color:var(--crimson-light);}
+.bg-chip.zero .bg-chip-val{color:var(--text-muted);}
+
+/* ── DONOR FILTERS ── */
+.filter-bar{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center;}
+.filter-select{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 13px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;outline:none;cursor:pointer;}
+.filter-input{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 13px;color:var(--text);font-family:'DM Mono',monospace;font-size:12px;outline:none;width:190px;}
+.filter-input:focus,.filter-select:focus{border-color:rgba(200,16,46,0.4);}
+.filter-toggle{display:flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 13px;font-size:12px;color:var(--text-dim);cursor:pointer;transition:all 0.2s;}
+.filter-toggle.active{border-color:rgba(46,204,113,0.3);color:var(--green);background:rgba(46,204,113,0.05);}
+.pager{margin-left:auto;display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text-dim);}
+.pager button{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:3px 10px;color:var(--text-dim);cursor:pointer;font-size:11px;transition:all 0.2s;}
+.pager button:hover{border-color:rgba(200,16,46,0.3);color:var(--crimson-light);}
+
+/* ── WASTAGE PAGE ── */
+.wastage-bg-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;}
+.wbg-card{background:var(--surface2);border:1px solid var(--border2);border-radius:9px;padding:13px 10px;text-align:center;}
+.wbg-name{font-family:'Fraunces',serif;font-size:18px;font-weight:600;color:var(--text);line-height:1;}
+.wbg-val{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;margin-top:4px;}
+.wbg-val.surplus{color:var(--amber);}
+.wbg-val.deficit{color:var(--crimson-light);}
+.wbg-val.balanced{color:var(--green);}
+.wbg-lbl{font-size:9px;color:var(--text-dim);text-transform:uppercase;margin-top:2px;letter-spacing:0.5px;}
+
+/* Saveable banner */
+.save-banner{display:flex;align-items:center;gap:14px;background:rgba(46,204,113,0.06);border:1px solid rgba(46,204,113,0.2);border-radius:10px;padding:14px 18px;margin-bottom:18px;}
+.save-banner-ico{font-size:26px;}
+.save-banner h4{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--green);margin-bottom:3px;}
+.save-banner p{font-size:11px;color:var(--text-dim);}
+
+/* Redistribution cards */
+.reco-card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px;}
+.reco-header{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+.reco-hosp-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.reco-hosp-col h5{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;}
+.hosp-row{display:flex;align-items:center;justify-content:space-between;background:var(--surface3);border-radius:7px;padding:8px 10px;margin-bottom:5px;}
+.hosp-info .hosp-name{font-size:12px;color:var(--text);font-weight:500;}
+.hosp-info .hosp-area{font-size:10px;color:var(--text-dim);margin-top:1px;}
+.hosp-info .hosp-phone{font-size:10px;color:var(--text-muted);}
+.hosp-units{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;}
+
+/* Surplus detail cards */
+.surplus-card{background:var(--surface2);border:1px solid rgba(232,184,109,0.15);border-radius:10px;padding:14px;margin-bottom:10px;}
+.surplus-card-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+.page.active .stat-card,.page.active .card{animation:fadeUp 0.35s ease both;}
+.page.active .stat-card:nth-child(1){animation-delay:0.04s;}
+.page.active .stat-card:nth-child(2){animation-delay:0.08s;}
+.page.active .stat-card:nth-child(3){animation-delay:0.12s;}
+.page.active .stat-card:nth-child(4){animation-delay:0.16s;}
+
+/* ── LOADING ── */
+.loading{display:flex;align-items:center;justify-content:center;height:180px;color:var(--text-dim);font-size:12px;gap:10px;}
+.spinner{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--crimson);border-radius:50%;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1200px){.stats-grid{grid-template-columns:repeat(2,1fr);}.bg-table-cards{grid-template-columns:repeat(4,1fr);}}
+@media(max-width:768px){.sidebar{display:none;}.main{margin-left:0;}.grid-2,.grid-3{grid-template-columns:1fr;}.stats-grid{grid-template-columns:1fr 1fr;}.bank-grid{grid-template-columns:1fr;}.bg-table-cards{grid-template-columns:repeat(2,1fr);}}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="logo-mark" title="BloodSaviour">🩸</div>
+  <button class="nav-btn active" onclick="showPage('dashboard')" title="Dashboard">
+    📊<span class="nav-tooltip">Dashboard</span>
+  </button>
+  <button class="nav-btn" onclick="showPage('predict')" title="Forecast">
+    🔮<span class="nav-tooltip">Demand Forecast</span>
+  </button>
+  <button class="nav-btn" onclick="showPage('donors')" title="Donors">
+    👥<span class="nav-tooltip">Donors</span>
+  </button>
+  <button class="nav-btn" onclick="showPage('banks')" title="Banks">
+    🏥<span class="nav-tooltip">Blood Banks</span>
+  </button>
+  <button class="nav-btn" onclick="showPage('wastage')" title="Wastage">
+    ♻️<span class="nav-tooltip">Wastage Control</span>
+  </button>
+</nav>
+
+<div class="main">
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left">
+      <h1>Blood<span>Saviour</span></h1>
+      <p id="header-sub">Mumbai Blood Intelligence — Mumbai Donors Only</p>
+    </div>
+    <div class="header-right">
+      <div class="live-badge"><div class="live-dot"></div>AI ACTIVE</div>
+      <div class="timestamp" id="clock">—</div>
+    </div>
+  </header>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" onclick="showPage('dashboard')">Overview</div>
+    <div class="tab" onclick="showPage('predict')">Demand Forecast</div>
+    <div class="tab" onclick="showPage('donors')">Donor Management</div>
+    <div class="tab" onclick="showPage('banks')">Mumbai Blood Banks</div>
+    <div class="tab" onclick="showPage('wastage')">Wastage Control</div>
+  </div>
+
+  <!-- ═══════════════════ DASHBOARD ═══════════════════ -->
+  <div class="page active" id="page-dashboard">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Units In Stock</div>
+        <div class="stat-value" id="total-stock">—</div>
+        <div class="stat-sub">Across all 8 blood groups</div>
+        <div class="stat-icon">🩸</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Shortages Detected</div>
+        <div class="stat-value red" id="shortage-count">—</div>
+        <div class="stat-sub">Blood groups at risk</div>
+        <div class="stat-icon">⚠️</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Mumbai Donors</div>
+        <div class="stat-value green" id="total-donors">—</div>
+        <div class="stat-sub" id="eligible-sub">— eligible today</div>
+        <div class="stat-icon">👥</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Predicted Tomorrow</div>
+        <div class="stat-value gold" id="total-forecast">—</div>
+        <div class="stat-sub">Total units required</div>
+        <div class="stat-icon">🔮</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- Trend chart -->
+      <div class="card">
+        <div class="card-title">Monthly Demand Trend <span>6 MONTHS</span></div>
+        <div class="chart-canvas-wrap" style="height:190px">
+          <canvas id="trend-chart-canvas"></canvas>
+        </div>
+        <div class="chart-metric-row">
+          <div class="chart-metric"><div class="chart-metric-val" id="trend-avg">—</div><div class="chart-metric-lbl">Avg / Month</div></div>
+          <div class="chart-metric"><div class="chart-metric-val" id="trend-peak">—</div><div class="chart-metric-lbl">Peak Month</div></div>
+          <div class="chart-metric"><div class="chart-metric-val" id="trend-total">—</div><div class="chart-metric-lbl">6M Total</div></div>
+        </div>
+      </div>
+
+      <!-- STOCK DISTRIBUTION — TABLE CARDS (replaces donut) -->
+      <div class="card">
+        <div class="card-title">Stock Distribution <span>BY GROUP</span></div>
+        <div class="bg-table-cards" id="bg-stock-cards">
+          <div class="loading" style="grid-column:1/-1;height:100px"><div class="spinner"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- Stock vs Forecast bar -->
+      <div class="card">
+        <div class="card-title">Stock vs Forecast — All Groups <span>TOMORROW</span></div>
+        <div class="chart-canvas-wrap" style="height:200px">
+          <canvas id="stock-bar-canvas"></canvas>
+        </div>
+      </div>
+      <!-- Shortage alerts -->
+      <div class="card">
+        <div class="card-title">Shortage Alerts <span id="shortage-badge">—</span></div>
+        <div id="shortage-list" style="display:flex;flex-direction:column;gap:9px">
+          <div class="loading"><div class="spinner"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top donors -->
+    <div class="card">
+      <div class="card-title">Top Mumbai Donors — Ranked by Retention Score <span>AI RANKED</span></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Name</th><th>Group</th><th>Donations</th><th>Last Donated</th><th>Retention Score</th><th>Status</th></tr></thead>
+          <tbody id="top-donors-table"><tr><td colspan="7" style="text-align:center;color:var(--text-dim);padding:20px">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ PREDICT ═══════════════════ -->
+  <div class="page" id="page-predict">
+    <div class="grid-2" style="align-items:start">
+      <div>
+        <h2 style="font-family:'Syne',sans-serif;font-size:19px;font-weight:800;margin-bottom:7px">Demand Forecasting</h2>
+        <p style="font-size:12px;color:var(--text-dim);margin-bottom:22px">AI prediction using Random Forest model trained on hospital transaction patterns.</p>
+        <div class="predict-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Blood Group</label>
+              <select id="pred-bg"><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>O+</option><option>O-</option><option>AB+</option><option>AB-</option></select>
+            </div>
+            <div class="form-group">
+              <label>Current Stock (units)</label>
+              <input type="number" id="pred-stock" value="20" min="0">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Target Date</label>
+              <input type="date" id="pred-date">
+            </div>
+          </div>
+          <button class="btn-primary" onclick="runPrediction()">🔮 Run AI Prediction</button>
+          <div class="result-box" id="pred-result">
+            <div class="result-row"><div class="key">Predicted Demand</div><div class="val" id="r-demand" style="color:var(--crimson-light)">—</div></div>
+            <div class="result-row"><div class="key">Current Stock</div><div class="val" id="r-stock">—</div></div>
+            <div class="result-row"><div class="key">Status</div><div class="val" id="r-status">—</div></div>
+            <div class="result-row"><div class="key">Excess / Shortage</div><div class="val" id="r-excess">—</div></div>
+            <div class="shortage-alert" id="r-alert" style="display:none">⚠ Shortage predicted. Contact eligible Mumbai donors or request transfer from nearby banks.</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">All Groups — Tomorrow's Forecast</div>
+        <table>
+          <thead><tr><th>Group</th><th>Stock</th><th>Forecast</th><th>Gap</th><th>Status</th></tr></thead>
+          <tbody id="all-forecast-table"><tr><td colspan="5" style="text-align:center;color:var(--text-dim);padding:20px">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ DONORS ═══════════════════ -->
+  <div class="page" id="page-donors">
+    <h2 style="font-family:'Syne',sans-serif;font-size:19px;font-weight:800;margin-bottom:5px">Mumbai Donor Management</h2>
+    <p style="font-size:12px;color:var(--text-dim);margin-bottom:4px">
+      Ranked by <strong style="color:var(--gold)">Retention Score</strong> =
+      <strong style="color:var(--text)">70% donation frequency</strong> +
+      <strong style="color:var(--text)">30% recency</strong>.
+      Donors who gave more AND donated recently rank highest — these are your best people to call first.
+    </p>
+    <p style="font-size:11px;color:var(--text-muted);margin-bottom:20px">
+      Showing <strong id="donor-total-count" style="color:var(--text)">—</strong> Mumbai donors only.
+    </p>
+
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Mumbai Donors</div><div class="stat-value green" id="ds-total">—</div><div class="stat-sub">In database</div><div class="stat-icon">👥</div></div>
+      <div class="stat-card"><div class="stat-label">Eligible Now</div><div class="stat-value" id="ds-eligible">—</div><div class="stat-sub">Ready to donate</div><div class="stat-icon">✅</div></div>
+      <div class="stat-card"><div class="stat-label">Avg Donations</div><div class="stat-value gold" id="ds-avg">—</div><div class="stat-sub">Per donor</div><div class="stat-icon">📊</div></div>
+      <div class="stat-card"><div class="stat-label">Max Donations</div><div class="stat-value red" id="ds-max">—</div><div class="stat-sub">Top donor count</div><div class="stat-icon">🏆</div></div>
+    </div>
+
+    <div class="filter-bar">
+      <input class="filter-input" id="donor-search" placeholder="🔍 Search name…" oninput="debounceDonorSearch()">
+      <select class="filter-select" id="donor-bg-filter" onchange="loadDonors()">
+        <option value="all">All Blood Groups</option>
+        <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+        <option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
+      </select>
+      <div class="filter-toggle" id="eligible-toggle" onclick="toggleEligible()">✓ Eligible Only</div>
+      <div class="pager">
+        Showing <strong id="donor-showing" style="color:var(--text)">—</strong> of <strong id="donor-of" style="color:var(--text)">—</strong>
+        <button onclick="changePage(-1)">◀</button>
+        <span id="donor-page-lbl">1 / 1</span>
+        <button onclick="changePage(1)">▶</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th title="Ranked by retention score">#</th>
+              <th>Name</th><th>Group</th><th>Gender</th><th>Age</th>
+              <th>Donations</th><th>Last Donated</th><th>Medical</th>
+              <th title="70% donation frequency + 30% recency (2-year window)">Retention Score ℹ</th>
+              <th>Status</th><th>Phone</th>
+            </tr>
+          </thead>
+          <tbody id="donors-table">
+            <tr><td colspan="11" style="text-align:center;color:var(--text-dim);padding:28px">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ BLOOD BANKS ═══════════════════ -->
+  <div class="page" id="page-banks">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px">
+      <div>
+        <h2 style="font-family:'Syne',sans-serif;font-size:19px;font-weight:800;margin-bottom:5px">Mumbai Blood Banks &amp; Hospitals</h2>
+        <p style="font-size:12px;color:var(--text-dim)">
+          Availability fetched live from <strong style="color:var(--text)">eRaktosh (NIC)</strong>.
+          Falls back to hourly-seeded simulation when portal is unreachable.
+        </p>
+      </div>
+      <button class="btn-sm" onclick="refreshBanks()">🔄 Refresh from eRaktosh</button>
+    </div>
+
+    <div class="filter-bar">
+      <select class="filter-select" id="bank-bg-filter" onchange="loadBanks()">
+        <option value="">All Blood Groups</option>
+        <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+        <option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
+      </select>
+      <select class="filter-select" id="bank-hours-filter" onchange="loadBanks()">
+        <option value="">All Hours</option>
+        <option value="24/7">24/7 Only</option>
+      </select>
+      <span id="bank-status-lbl" style="font-size:11px;color:var(--text-muted)"></span>
+    </div>
+
+    <div class="bank-grid" id="bank-grid">
+      <div class="loading" style="grid-column:1/-1"><div class="spinner"></div> Loading facilities…</div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════ WASTAGE ═══════════════════ -->
+  <div class="page" id="page-wastage">
+    <h2 style="font-family:'Syne',sans-serif;font-size:19px;font-weight:800;margin-bottom:6px">Wastage Reduction</h2>
+    <p style="font-size:12px;color:var(--text-dim);margin-bottom:22px">
+      Blood stocked above tomorrow's forecast risks expiry. Redistributing surplus to shortage groups directly reduces waste and saves lives.
+    </p>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">At-Risk Surplus</div>
+        <div class="stat-value red" id="w-total">—</div>
+        <div class="stat-sub">Units above forecast (may expire)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Saveable Units</div>
+        <div class="stat-value green" id="w-saveable">—</div>
+        <div class="stat-sub">If redistributed to shortage groups</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Groups with Surplus</div>
+        <div class="stat-value gold" id="w-groups">—</div>
+        <div class="stat-sub">More stock than needed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Groups in Shortage</div>
+        <div class="stat-value red" id="w-short">—</div>
+        <div class="stat-sub">Below forecast — urgent</div>
+      </div>
+    </div>
+
+    <!-- Save banner -->
+    <div class="save-banner" id="w-save-banner" style="display:none">
+      <div class="save-banner-ico">♻️</div>
+      <div>
+        <h4 id="w-banner-title">—</h4>
+        <p id="w-banner-desc">—</p>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <!-- Per-group surplus/deficit table (replaces confusing donut) -->
+      <div class="card">
+        <div class="card-title">Surplus &amp; Deficit per Blood Group <span>VS FORECAST</span></div>
+        <div class="wastage-bg-grid" id="wastage-bg-grid">
+          <div class="loading" style="grid-column:1/-1;height:80px"><div class="spinner"></div></div>
+        </div>
+        <div style="margin-top:10px;font-size:10px;color:var(--text-muted);line-height:1.7">
+          🟡 <span style="color:var(--amber)">Surplus</span> = stock above forecast — risk of expiry &nbsp;|&nbsp;
+          🔴 <span style="color:var(--crimson-light)">Deficit</span> = stock below forecast — shortage &nbsp;|&nbsp;
+          🟢 <span style="color:var(--green)">Balanced</span> = within range
+        </div>
+      </div>
+      <!-- Wastage bar chart -->
+      <div class="card">
+        <div class="card-title">Excess Units by Group <span>BAR CHART</span></div>
+        <div class="chart-canvas-wrap" style="height:220px">
+          <canvas id="wastage-bar-canvas"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Redistribution plan with hospital names -->
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">Hospital Redistribution Plan <span>WITH CONTACTS</span></div>
+      <p style="font-size:11px;color:var(--text-dim);margin-top:-10px;margin-bottom:16px">
+        For each blood group in shortage, hospitals that currently have enough stock are listed as
+        <strong style="color:var(--green)">givers</strong> and those critically low are
+        <strong style="color:var(--crimson-light)">receivers</strong>.
+        Call the giver to arrange a transfer to the receiver.
+      </p>
+      <div id="reco-list">
+        <div class="loading"><div class="spinner"></div></div>
+      </div>
+    </div>
+
+    <!-- Surplus holders -->
+    <div class="card">
+      <div class="card-title">Surplus Group Detail — Hospitals Holding Excess <span>ACTION NEEDED</span></div>
+      <p style="font-size:11px;color:var(--text-dim);margin-top:-10px;margin-bottom:14px">
+        These groups have more stock than forecast demand. Hospitals with the highest holdings are listed — contact them to proactively redirect units before expiry.
+      </p>
+      <div id="surplus-detail">
+        <div class="loading"><div class="spinner"></div></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- .main -->
+
+<script>
+// ═════════════════════════════════════════════════
+// STATE
+// ═════════════════════════════════════════════════
+let dashData     = null;
+let eligibleOnly = false;
+let donorPage    = 1;
+const PER_PAGE   = 50;
+let searchTimer  = null;
+const BG_GROUPS  = ['A+','A-','B+','B-','O+','O-','AB+','AB-'];
+
+// Clock
+function updateClock() {
+  document.getElementById('clock').textContent = new Date().toLocaleString('en-IN',{
+    day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true
+  });
+}
+setInterval(updateClock,1000); updateClock();
+document.getElementById('pred-date').valueAsDate = new Date(Date.now()+86400000);
+
+// Shared chart options
+const TT = {backgroundColor:'#18181C',borderColor:'rgba(200,16,46,0.3)',borderWidth:1,titleColor:'#F0EDE8',bodyColor:'#7A7570'};
+const SC = {
+  x:{ticks:{color:'#7A7570',font:{family:'DM Mono',size:10}},grid:{color:'rgba(200,16,46,0.05)'},border:{color:'rgba(200,16,46,0.12)'}},
+  y:{ticks:{color:'#7A7570',font:{family:'DM Mono',size:10}},grid:{color:'rgba(200,16,46,0.05)'},border:{color:'rgba(200,16,46,0.12)'}},
+};
+const _charts = {};
+function mkChart(id, type, data, opts) {
+  const el = document.getElementById(id); if(!el) return;
+  if (_charts[id]) _charts[id].destroy();
+  _charts[id] = new Chart(el, {type,data,options:opts});
+  return _charts[id];
+}
+
+// ═════════════════════════════════════════════════
+// PAGE SWITCHING
+// ═════════════════════════════════════════════════
+const PAGES = ['dashboard','predict','donors','banks','wastage'];
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  const i = PAGES.indexOf(name);
+  document.querySelectorAll('.tab')[i]?.classList.add('active');
+  document.querySelectorAll('.nav-btn')[i]?.classList.add('active');
+  if (name==='donors')  loadDonors();
+  if (name==='banks')   loadBanks();
+  if (name==='wastage') loadWastage();
+}
+
+// ═════════════════════════════════════════════════
+// DASHBOARD
+// ═════════════════════════════════════════════════
+async function loadDashboard() {
+  const res = await fetch('/api/dashboard');
+  dashData  = await res.json();
+
+  document.getElementById('total-stock').textContent    = dashData.total_units_in_stock;
+  document.getElementById('shortage-count').textContent = dashData.shortages.length;
+  document.getElementById('total-donors').textContent   = dashData.total_donors.toLocaleString();
+  document.getElementById('eligible-sub').textContent   = dashData.eligible_donors.toLocaleString() + ' eligible today';
+  document.getElementById('total-forecast').textContent = Math.round(Object.values(dashData.forecasts).reduce((a,b)=>a+b,0));
+
+  // Donor page stats
+  const set = (id,v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('ds-total',   dashData.total_donors.toLocaleString());
+  set('ds-eligible',dashData.eligible_donors.toLocaleString());
+  set('ds-avg',     dashData.avg_donations);
+  set('ds-max',     dashData.max_donations);
+
+  renderTrendChart();
+  renderBGStockCards();
+  renderStockVsForecastBar();
+  renderShortages();
+  renderTopDonors();
+  renderAllForecastTable();
+}
+
+// ── Trend chart ─────────────────────────────────
+function renderTrendChart() {
+  const d = dashData.monthly_trend;
+  const v = d.map(x=>x.units);
+  document.getElementById('trend-avg').textContent   = Math.round(v.reduce((a,b)=>a+b,0)/v.length);
+  document.getElementById('trend-peak').textContent  = Math.max(...v);
+  document.getElementById('trend-total').textContent = v.reduce((a,b)=>a+b,0);
+
+  mkChart('trend-chart-canvas','line',{
+    labels: d.map(x=>x.month),
+    datasets:[{
+      label:'Demand',data:v,borderColor:'#C8102E',borderWidth:2.5,
+      backgroundColor: ctx=>{const g=ctx.chart.ctx.createLinearGradient(0,0,0,190);g.addColorStop(0,'rgba(200,16,46,0.28)');g.addColorStop(1,'rgba(200,16,46,0)');return g;},
+      fill:true,tension:0.4,pointBackgroundColor:'#FF3352',pointBorderColor:'#111114',pointBorderWidth:2,pointRadius:5,pointHoverRadius:7,
+    }]
+  },{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>` ${c.parsed.y} units`}}},scales:SC});
+}
+
+// ── Blood Group STOCK CARDS (replaces donut) ─────
+function renderBGStockCards() {
+  const container = document.getElementById('bg-stock-cards');
+  container.innerHTML = '';
+  const maxStock = Math.max(...dashData.bg_stats.map(s=>s.stock), 1);
+
+  dashData.bg_stats.forEach(s => {
+    const pct    = Math.round((s.stock / maxStock) * 100);
+    const vsPct  = Math.round((s.stock / Math.max(s.forecast,1)) * 100);
+    const isOk   = !s.shortage;
+    const barClr = isOk ? '#2ECC71' : '#C8102E';
+    const unitClr= isOk ? 'ok' : 'short';
+    const cls    = isOk ? 'bg-ok' : 'bg-short';
+    const badge  = isOk ? '<span class="bg-tcard-badge ok">✓ OK</span>' : '<span class="bg-tcard-badge short">⚠ SHORT</span>';
+
+    container.innerHTML += `
+      <div class="bg-tcard ${cls}">
+        <div class="bg-tcard-name">${s.group}</div>
+        <div class="bg-tcard-units ${unitClr}">${s.stock}</div>
+        <div class="bg-tcard-sub">units in stock</div>
+        <div class="bg-tcard-bar"><div class="bg-tcard-fill" style="width:${pct}%;background:${barClr}"></div></div>
+        <div class="bg-tcard-forecast">Forecast: <strong style="color:var(--text)">${s.forecast}</strong> · Coverage: ${vsPct}%</div>
+        ${badge}
+      </div>`;
+  });
+}
+
+// ── Stock vs Forecast grouped bar ───────────────
+function renderStockVsForecastBar() {
+  const labels   = dashData.bg_stats.map(s=>s.group);
+  const stocks   = dashData.bg_stats.map(s=>s.stock);
+  const forecasts= dashData.bg_stats.map(s=>s.forecast);
+  const sColors  = dashData.bg_stats.map(s=>s.shortage?'rgba(200,16,46,0.82)':'rgba(232,184,109,0.8)');
+
+  mkChart('stock-bar-canvas','bar',{
+    labels,
+    datasets:[
+      {label:'Current Stock',data:stocks,backgroundColor:sColors,borderRadius:4,borderSkipped:false},
+      {label:'Forecast',data:forecasts,backgroundColor:'rgba(200,16,46,0.18)',borderColor:'rgba(200,16,46,0.45)',borderWidth:1,borderRadius:4,borderSkipped:false},
+    ]
+  },{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+     plugins:{legend:{labels:{color:'#7A7570',font:{family:'DM Mono',size:10},boxWidth:10}},tooltip:TT},scales:SC});
+}
+
+// ── Shortage alerts ──────────────────────────────
+function renderShortages() {
+  const list  = document.getElementById('shortage-list');
+  const badge = document.getElementById('shortage-badge');
+  badge.textContent = dashData.shortages.length + ' GROUPS';
+  if (!dashData.shortages.length) {
+    list.innerHTML = `<div style="color:var(--green);font-size:13px;padding:18px 0">✓ No shortages — all groups are sufficiently stocked.</div>`;
+    return;
+  }
+  list.innerHTML = dashData.shortages.map(bg=>{
+    const s = dashData.bg_stats.find(x=>x.group===bg);
+    return `<div style="background:rgba(200,16,46,0.05);border:1px solid rgba(200,16,46,0.2);border-radius:8px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:11px">
+        <div class="blood-badge">${bg}</div>
+        <div><div style="font-size:13px;color:var(--text)">Shortage Detected</div>
+        <div style="font-size:11px;color:var(--text-dim)">Stock: ${s.stock} · Forecast: ${s.forecast}</div></div>
+      </div>
+      <span class="badge badge-red">⚠ Short by ${Math.round(s.forecast-s.stock)} units</span>
+    </div>`;
+  }).join('');
+}
+
+// ── Top donors table ────────────────────────────
+function renderTopDonors() {
+  const tbody = document.getElementById('top-donors-table');
+  tbody.innerHTML = dashData.top_donors.map((d,i)=>{
+    const sc = d.retention_score||0;
+    const scClr = sc>70?'var(--green)':sc>40?'var(--gold)':'var(--crimson-light)';
+    return `<tr>
+      <td><div class="rank-num ${i===0?'top':''}">${i+1}</div></td>
+      <td><strong style="color:var(--text)">${d.name}</strong></td>
+      <td><div class="blood-badge">${d.blood_group}</div></td>
+      <td><span style="font-family:'Syne',sans-serif;font-weight:700">${d.total_donations}</span></td>
+      <td style="color:var(--text-dim)">${d.last_donation||'—'}</td>
+      <td><div class="score-bar">
+        <div class="score-track"><div class="score-fill" style="width:${sc}%;background:${scClr}"></div></div>
+        <div class="score-num" style="color:${scClr}">${Math.round(sc)}%</div>
+      </div></td>
+      <td><span class="badge ${d.eligible?'badge-green':'badge-dim'}">${d.eligible?'✓ Eligible':'⏳ Wait'}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ── All groups forecast table ────────────────────
+function renderAllForecastTable() {
+  const tbody = document.getElementById('all-forecast-table');
+  if (!tbody||!dashData) return;
+  tbody.innerHTML = dashData.bg_stats.map(s=>{
+    const gap = s.forecast - s.stock;
+    const gapTxt = gap>0
+      ? `<span style="color:var(--crimson-light)">−${Math.round(gap)}</span>`
+      : `<span style="color:var(--green)">+${Math.round(-gap)}</span>`;
+    return `<tr>
+      <td><div class="blood-badge">${s.group}</div></td>
+      <td>${s.stock}</td><td>${s.forecast}</td><td>${gapTxt}</td>
+      <td><span class="badge ${s.shortage?'badge-red':'badge-green'}">${s.shortage?'⚠ Short':'✓ OK'}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ═════════════════════════════════════════════════
+// PREDICT
+// ═════════════════════════════════════════════════
+async function runPrediction() {
+  const bg    = document.getElementById('pred-bg').value;
+  const stock = document.getElementById('pred-stock').value;
+  const date  = document.getElementById('pred-date').value;
+  const res   = await fetch('/api/predict',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({blood_group:bg,stock,date})});
+  const data  = await res.json();
+
+  document.getElementById('r-demand').textContent = data.predicted_demand+' units';
+  document.getElementById('r-stock').textContent  = data.current_stock+' units';
+  document.getElementById('r-status').textContent = data.shortage?'⚠ SHORTAGE':'✓ SUFFICIENT';
+  document.getElementById('r-status').style.color = data.shortage?'var(--crimson-light)':'var(--green)';
+  if (data.shortage) {
+    document.getElementById('r-excess').textContent = '−'+data.shortage_amount+' units';
+    document.getElementById('r-excess').style.color = 'var(--crimson-light)';
+    document.getElementById('r-alert').style.display = 'flex';
+  } else {
+    document.getElementById('r-excess').textContent = '+'+data.excess+' units surplus';
+    document.getElementById('r-excess').style.color = 'var(--green)';
+    document.getElementById('r-alert').style.display = 'none';
+  }
+  document.getElementById('pred-result').classList.add('visible');
+}
+
+// ═════════════════════════════════════════════════
+// DONORS — Mumbai only, retention-ranked
+// ═════════════════════════════════════════════════
+function debounceDonorSearch() {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(loadDonors, 350);
+}
+
+async function loadDonors() { donorPage=1; await fetchDonors(); }
+
+async function fetchDonors() {
+  const tbody = document.getElementById('donors-table');
+  tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--text-dim);padding:28px"><span style="display:inline-flex;align-items:center;gap:9px"><span class="spinner"></span>Loading…</span></td></tr>`;
+  try {
+    const bg   = document.getElementById('donor-bg-filter').value;
+    const srch = encodeURIComponent(document.getElementById('donor-search').value.trim());
+    const url  = `/api/donors?blood_group=${bg}&eligible_only=${eligibleOnly}&search=${srch}&page=${donorPage}&per_page=${PER_PAGE}`;
+    const res  = await fetch(url);
+    const data = await res.json();
+    const s = (donorPage-1)*PER_PAGE+1, e = Math.min(donorPage*PER_PAGE, data.total);
+    document.getElementById('donor-showing').textContent   = `${s}–${e}`;
+    document.getElementById('donor-of').textContent        = data.total.toLocaleString();
+    document.getElementById('donor-page-lbl').textContent  = `${data.page} / ${data.pages}`;
+    document.getElementById('donor-total-count').textContent = data.total.toLocaleString();
+    renderDonorsTable(data.donors);
+  } catch(err) {
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--crimson-light);padding:28px">⚠ ${err.message}</td></tr>`;
+  }
+}
+
+function changePage(d) {
+  const parts = document.getElementById('donor-page-lbl').textContent.split('/');
+  const total = parseInt(parts[1])||1;
+  donorPage   = Math.max(1, Math.min(donorPage+d, total));
+  fetchDonors();
+}
+
+function toggleEligible() {
+  eligibleOnly = !eligibleOnly;
+  document.getElementById('eligible-toggle').classList.toggle('active', eligibleOnly);
+  loadDonors();
+}
+
+function renderDonorsTable(donors) {
+  const tbody = document.getElementById('donors-table');
+  if (!donors.length) {
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;color:var(--text-dim);padding:28px">No donors found.</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = donors.map(d => {
+    const sc    = d.retention_score||0;
+    const scClr = sc>70?'var(--green)':sc>40?'var(--gold)':'var(--crimson-light)';
+    const medClr= (d.medical&&d.medical!=='None')?'var(--amber)':'var(--text-dim)';
+    return `<tr>
+      <td><div class="rank-num ${d.rank<=3?'top':''}">${d.rank}</div></td>
+      <td><strong style="color:var(--text)">${d.name}</strong></td>
+      <td><div class="blood-badge">${d.blood_group}</div></td>
+      <td style="color:var(--text-dim)">${d.gender||'—'}</td>
+      <td>${d.age}</td>
+      <td><span style="font-family:'Syne',sans-serif;font-weight:700;font-size:15px">${d.total_donations}</span></td>
+      <td style="color:var(--text-dim)">${d.last_donation||'—'}</td>
+      <td style="font-size:10px;color:${medClr}">${d.medical||'None'}</td>
+      <td><div class="score-bar">
+        <div class="score-track"><div class="score-fill" style="width:${sc}%;background:${scClr}"></div></div>
+        <div class="score-num" style="color:${scClr}">${Math.round(sc)}%</div>
+      </div></td>
+      <td><span class="badge ${d.eligible?'badge-green':'badge-dim'}">${d.eligible?'✓ Ready':'⏳ Wait'}</span></td>
+      <td style="font-size:10px;color:var(--text-dim)">${d.phone}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ═════════════════════════════════════════════════
+// BLOOD BANKS
+// ═════════════════════════════════════════════════
+async function loadBanks() {
+  const bg  = document.getElementById('bank-bg-filter').value;
+  const hrs = document.getElementById('bank-hours-filter').value;
+  const res = await fetch(`/api/blood_banks?blood_group=${bg}&hours=${hrs}`);
+  const banks = await res.json();
+  renderBanks(banks, bg);
+}
+
+async function refreshBanks() {
+  document.getElementById('bank-grid').innerHTML = '<div class="loading" style="grid-column:1/-1"><div class="spinner"></div> Fetching eRaktosh live data…</div>';
+  const res  = await fetch('/api/blood_banks/refresh');
+  const data = await res.json();
+  document.getElementById('bank-status-lbl').textContent =
+    data.status === 'live'
+      ? `✅ eRaktosh live — ${data.banks} Mumbai banks updated`
+      : '⚠ eRaktosh unreachable — showing simulated data';
+  loadBanks();
+}
+
+function renderBanks(banks, bgFilter) {
+  const grid = document.getElementById('bank-grid');
+  grid.innerHTML = '';
+  if (!banks.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;color:var(--text-dim);padding:28px;text-align:center">No banks found.</div>';
+    return;
+  }
+  banks.forEach(b => {
+    const srcCls = b.source === 'eRaktosh Live' ? 'live' : 'sim';
+    const srcLbl = b.source === 'eRaktosh Live' ? '🟢 eRaktosh Live' : '🔵 Simulated';
+
+    const chips = BG_GROUPS.map(bg => {
+      if (bgFilter && bg !== bgFilter) return '';
+      const qty = b[bg]||0;
+      const cls = qty>=15?'high':qty>=5?'med':qty>0?'low':'zero';
+      return `<div class="bg-chip ${cls}">
+        <span class="bg-chip-name">${bg}</span>
+        <span class="bg-chip-val">${qty}</span>
+      </div>`;
+    }).join('');
+
+    grid.innerHTML += `
+      <div class="bank-card">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px">
+          <div class="bank-name">🏥 ${b.name}</div>
+          <span class="bank-src ${srcCls}">${srcLbl}</span>
+        </div>
+        <div class="bank-area">📍 ${b.area}, Mumbai</div>
+        <div class="bank-meta">
+          <span>📞 ${b.phone}</span>
+          <span class="badge ${b.hours==='24/7'?'badge-green':'badge-dim'}" style="font-size:9px;padding:2px 8px">${b.hours}</span>
+          <span>Updated: ${b.last_updated||'—'}</span>
+        </div>
+        <div class="bg-chips">${chips}</div>
+      </div>`;
+  });
+}
+
+// ═════════════════════════════════════════════════
+// WASTAGE — redesigned, no confusing donut
+// ═════════════════════════════════════════════════
+async function loadWastage() {
+  if (!dashData) await loadDashboard();
+
+  const res = await fetch('/api/wastage_hospitals');
+  const wd  = await res.json();
+
+  // Summary stats
+  document.getElementById('w-total').textContent    = Math.round(wd.total_excess);
+  document.getElementById('w-saveable').textContent = Math.round(wd.saveable_units);
+  document.getElementById('w-groups').textContent   = wd.surplus_detail.length;
+  document.getElementById('w-short').textContent    = wd.shortages.length;
+
+  // Save banner
+  const banner = document.getElementById('w-save-banner');
+  if (wd.saveable_units > 0) {
+    banner.style.display = 'flex';
+    document.getElementById('w-banner-title').textContent =
+      `♻️ ${Math.round(wd.saveable_units)} units can be saved through redistribution`;
+    document.getElementById('w-banner-desc').textContent =
+      `${wd.surplus_detail.length} blood group(s) have excess stock. ${wd.shortages.length} group(s) are in shortage. ` +
+      `Moving surplus to shortage hospitals prevents expiry and fills critical gaps.`;
+  } else {
+    banner.style.display = 'none';
+  }
+
+  // Per-group surplus/deficit cards
+  renderWastageGroupCards(wd);
+  // Wastage bar
+  renderWastageBar(wd);
+  // Redistribution with hospital names
+  renderRecos(wd);
+  // Surplus detail
+  renderSurplusDetail(wd);
+}
+
+function renderWastageGroupCards(wd) {
+  const grid = document.getElementById('wastage-bg-grid');
+  grid.innerHTML = '';
+  const surplusMap = {};
+  wd.surplus_detail.forEach(s => surplusMap[s.blood_group] = s.excess_units);
+  const shortSet = new Set(wd.shortages);
+
+  BG_GROUPS.forEach(bg => {
+    let val, lbl, cls;
+    if (shortSet.has(bg) && dashData) {
+      const s = dashData.bg_stats.find(x=>x.group===bg);
+      val = `−${Math.round(s.forecast - s.stock)}`; lbl = 'Deficit'; cls = 'deficit';
+    } else if (surplusMap[bg] !== undefined) {
+      val = `+${surplusMap[bg]}`; lbl = 'Surplus'; cls = 'surplus';
+    } else {
+      val = '±0'; lbl = 'Balanced'; cls = 'balanced';
+    }
+    grid.innerHTML += `
+      <div class="wbg-card">
+        <div class="wbg-name">${bg}</div>
+        <div class="wbg-val ${cls}">${val} units</div>
+        <div class="wbg-lbl">${lbl}</div>
+      </div>`;
+  });
+}
+
+function renderWastageBar(wd) {
+  const surplusMap = {};
+  wd.surplus_detail.forEach(s => surplusMap[s.blood_group] = s.excess_units);
+  const shortSet = new Set(wd.shortages);
+
+  const vals   = BG_GROUPS.map(bg => {
+    if (surplusMap[bg]) return surplusMap[bg];
+    if (shortSet.has(bg) && dashData) {
+      const s = dashData.bg_stats.find(x=>x.group===bg);
+      return s ? -(s.forecast - s.stock) : 0;
+    }
+    return 0;
+  });
+  const colors = vals.map(v => v>0?'rgba(232,184,109,0.82)':v<0?'rgba(200,16,46,0.82)':'rgba(46,204,113,0.7)');
+
+  mkChart('wastage-bar-canvas','bar',{
+    labels: BG_GROUPS,
+    datasets:[{label:'Units (+ surplus / − deficit)',data:vals,backgroundColor:colors,borderRadius:5,borderSkipped:false}]
+  },{responsive:true,maintainAspectRatio:false,
+     plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:c=>c.parsed.y>=0?` +${c.parsed.y} surplus`:` ${c.parsed.y} deficit`}}},
+     scales:{x:SC.x,y:{...SC.y,ticks:{...SC.y.ticks,callback:v=>(v>0?'+':'')+v}}}});
+}
+
+function renderRecos(wd) {
+  const el = document.getElementById('reco-list');
+  if (!wd.recommendations.length) {
+    el.innerHTML = `<div style="color:var(--green);font-size:13px;padding:10px 0">✓ No blood groups are in shortage. Stock is well-balanced — no redistribution needed.</div>`;
+    return;
+  }
+  el.innerHTML = wd.recommendations.map(r => {
+    const giverRows = r.donor_hospitals.length
+      ? r.donor_hospitals.map(h=>`
+          <div class="hosp-row">
+            <div class="hosp-info">
+              <div class="hosp-name">${h.name}</div>
+              <div class="hosp-area">📍 ${h.area} &nbsp;|&nbsp; 📞 ${h.phone}</div>
+            </div>
+            <span class="hosp-units" style="color:var(--green)">${h.units} units</span>
+          </div>`).join('')
+      : `<div style="font-size:11px;color:var(--text-muted);padding:8px">No hospitals with significant surplus of ${r.blood_group} found</div>`;
+
+    const recvRows = r.receiver_hospitals.map(h=>`
+        <div class="hosp-row">
+          <div class="hosp-info">
+            <div class="hosp-name">${h.name}</div>
+            <div class="hosp-area">📍 ${h.area} &nbsp;|&nbsp; 📞 ${h.phone}</div>
+          </div>
+          <span class="hosp-units" style="color:var(--crimson-light)">${h.units} units</span>
+        </div>`).join('');
+
+    return `
+      <div class="reco-card">
+        <div class="reco-header">
+          <div class="blood-badge">${r.blood_group}</div>
+          <div style="flex:1">
+            <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text)">${r.blood_group} — Short by ${r.need_units} units</div>
+            <div style="font-size:11px;color:var(--text-dim);margin-top:2px">Contact a giver hospital → request transfer to a receiver hospital</div>
+          </div>
+          <span class="badge badge-red">Urgent</span>
+        </div>
+        <div class="reco-hosp-grid">
+          <div class="reco-hosp-col">
+            <h5>🟢 Giver Hospitals (have surplus)</h5>
+            ${giverRows}
+          </div>
+          <div class="reco-hosp-col">
+            <h5>🔴 Receiver Hospitals (critically low)</h5>
+            ${recvRows}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function renderSurplusDetail(wd) {
+  const el = document.getElementById('surplus-detail');
+  if (!wd.surplus_detail.length) {
+    el.innerHTML = `<div style="color:var(--green);font-size:13px;padding:10px 0">✓ No surplus groups — all groups are balanced or in shortage.</div>`;
+    return;
+  }
+  el.innerHTML = wd.surplus_detail.map(s => {
+    const holders = s.top_holders.map(h=>`
+      <div class="hosp-row">
+        <div class="hosp-info">
+          <div class="hosp-name">${h.name}</div>
+          <div class="hosp-area">📍 ${h.area} &nbsp;|&nbsp; 📞 ${h.phone}</div>
+        </div>
+        <span class="hosp-units" style="color:var(--amber)">${h.units} units</span>
+      </div>`).join('');
+
+    return `
+      <div class="surplus-card">
+        <div class="surplus-card-header">
+          <div class="blood-badge" style="color:var(--gold);border-color:rgba(232,184,109,0.3);background:rgba(232,184,109,0.08)">${s.blood_group}</div>
+          <div style="flex:1">
+            <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--gold)">${s.blood_group} — +${s.excess_units} surplus units</div>
+            <div style="font-size:11px;color:var(--text-dim)">Stock: ${s.stock} · Forecast: ${s.forecast} · Excess will expire if not redistributed</div>
+          </div>
+          <span class="badge badge-gold">⚠ Expiry Risk</span>
+        </div>
+        <div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:7px">Hospitals holding most ${s.blood_group} — contact to redirect</div>
+        ${holders}
+      </div>`;
+  }).join('');
+}
+
+// ═════════════════════════════════════════════════
+// INIT
+// ═════════════════════════════════════════════════
+loadDashboard();
+</script>
+</body>
+</html>
