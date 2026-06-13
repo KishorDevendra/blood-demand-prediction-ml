@@ -29,6 +29,7 @@ their blood inventory, reduce shortages, and save lives.
 ## Results & recognition
 Runner-Up — TantraVihar 2026 Inter-Collegiate Project Competition
 Organized by VSIT College, Mumbai
+https://www.linkedin.com/posts/kishor-devendra-a69440283_tantravihar-vsit-datascience-ugcPost-7442454850010898432-KOIO/?utm_source=share&utm_medium=member_desktop&rcm=ACoAAETxKfEB7A7ZpUz7aLXNq4u84JYzrE8iDTU
 
 ---
 Made by Kishor Devendra | B.Sc Data Science, VSIT Mumbai
